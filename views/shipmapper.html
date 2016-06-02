@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Shipmapper</title>
+    <!--script src="https://cdn.socket.io/socket.io-1.4.5.js"></script--> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.6/socket.io.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+      .ship {
+        font-size:10px;
+        text-shadow: 1px 1px #FFFFFF;
+        border: 1px none yellow;
+        width:50px;
+        height:20px;
+      }
+      
+      .shiptext {
+        text-align: center;
+        width: 100%;
+        border: 1px none green;
+        position: relative;
+      }
+      
+      .ontop {
+        position: absolute;
+        display: block;
+        top: 0px;
+        width: 100%;
+        margin: auto;
+        text-align: auto;
+      }
+      
+      svg {
+        border: 1px none red;
+        margin:auto;
+        display: block;
+        fill: none;
+      }
+      
+      .passenger svg {
+        fill: cyan;
+      }
+      
+      .cargo svg {
+        fill: yellow; 
+      }
+      
+      .reserved svg {
+        fill: chartreuse;
+      }
+      
+      .tanker svg {
+        fill: red;
+      }
+      
+      .tug svg {
+        fill: lightseagreen;
+      }
+      
+      .tow svg {
+        fill: blue;
+      }
+      
+      .search svg {
+        fill: orange;
+      }
+      
+      .speed svg {
+        fill: DarkOrchid;
+      }
+      
+      .pleasure svg {
+        fill: pink;
+      }
+      
+      .law svg {
+        fill: dodgerblue;
+      }
+      
+      .fishing svg {
+        fill: DarkSlateGray;
+      }
+      
+      .pilot svg {
+        fill: magenta;
+      }
+      
+      .anti-pollution svg {
+        fill: DarkGray;
+      }
+      
+      #legend {
+        position: fixed;
+        padding: 10px;
+        background-color:rgba(255, 255, 255, 0.6);
+        top: 0px;
+        right: 0px;
+      }
+      
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id=legend>
+      <table id="legend_table"></table>
+    </div>
+    <script>
+      var ships = {};
+      var types = ["passenger", "cargo", "reserved", "tanker", "tug", "tow", "search", "speed", "pleasure", "law", "fishing", "pilot", "anti-pollution"];
+      var map;
+
+      var socket = io('ws://shipmapper.no-ip.net/');
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 37.802734, lng:-122.398048},
+          zoom: 12,
+          mapTypeId: google.maps.MapTypeId.TERRAIN
+        });
+
+        socket.on('ship_data', function (data) {
+          if ((data != null) && (data.mmsi != undefined)) {
+  
+            if (typeof RichMarker == 'undefined') {
+              return;
+            }
+            if (!(data.mmsi in ships)) {
+              var markerOptions = {
+                map: map,
+                position: new google.maps.LatLng(0 ,0),
+                draggable: false,
+                flat: true,
+                anchor: RichMarkerPosition.MIDDLE,
+                content: '<div class="ship" id="' + data.mmsi + '"><div class="ontop"><svg width="10" height="20"><polygon points="5,0 0,20 10,20" stroke="black" stroke-width="0.5"/></svg></div><div class="shiptext ontop">'+data.mmsi+'</div></div>' 
+              };
+              ships[data.mmsi] = new RichMarker(markerOptions);
+
+              //var debugMarker = new google.maps.Marker ({map: map,position: {lat: data.lat, lng: data.lon}});              
+            }
+              
+            var ship = ships[data.mmsi];
+            if (data.lat) {
+              ship.setPosition(new google.maps.LatLng(data.lat, data.lon));
+              $('#' + data.mmsi).css({'-webkit-transform' : 'rotate('+ data.heading +'deg)',
+                                      '-moz-transform' : 'rotate('+ data.heading +'deg)',
+                                      '-ms-transform' : 'rotate('+ data.heading +'deg)',
+                                      'transform' : 'rotate('+ data.heading +'deg)'});
+            }
+
+            if (data.shipname) {
+              $('#' + data.mmsi).find('.shiptext').html(data.shipname);
+            }
+            
+            var unknowntype = true;
+            if (data.shiptype) {
+              var shiptype = data.shiptype.toLowerCase();
+              for (var i = 0; i < types.length; i++) {
+                if (shiptype.includes(types[i])) {
+                  $('#' + data.mmsi).addClass(types[i]);
+                  unknowntype = false;
+                  break;
+                }  
+              }
+              if (unknowntype) {
+                console.log('unknown type: ', shiptype);
+              }
+            }
+          }
+        });
+      }
+      for (var i = 0; i < types.length; i++) {
+        var newRow = $('<tr>');
+        newRow.append($('<td>').html(types[i]));
+        newRow.append($('<td>').html('<svg width="20" height="10"><polygon points="20,5 0,0 0,10" stroke="black" stroke-width="0.5"/></svg>')).addClass(types[i]);
+        $('#legend_table').append(newRow);
+      }
+    </script>
+    <script 
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBWWmcUkftruTFgIsJjNh3RnDaghis_5HA&callback=initMap">
+    </script>
+    <script>
+      var fileref=document.createElement('script');
+      fileref.setAttribute("type","text/javascript");
+      fileref.setAttribute("src", "/public/lib/js-rich-marker/src/richmarker.js");
+      document.getElementsByTagName("head")[0].appendChild(fileref)   
+    </script>
+    <svg></svg>
+  </body>
+</html>
