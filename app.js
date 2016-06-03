@@ -15,7 +15,7 @@ var fs = require('fs');
 var config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 var ais_stream = config.ais_stream;
 
-var inData = "";
+var str = "";
 var dataReceived = false;
 
 app.engine('html', exphbs({extname:'html'}));
@@ -47,18 +47,26 @@ setInterval(function() {
 }, 60000);
 
 var aisStream = new net.Socket();
-console.log("connectig to bitway");
+console.log("connecting to stream");
 aisStream.connect(ais_stream.port,ais_stream.url, function() {
-  console.log('Connected to bitway');
+  console.log('...Connected to stream');
 });
 
+
 aisStream.on('data', function(data) {
+  console.log(data.toString());
   dataReceived = true;
-  var splitData = data.toString().split('\n');
-  for (var i = 0; i < splitData.length; i++) {
-    if (splitData[i].length === 0) {
-      continue;
+  for (var i = 0; i < data.length; i++) {
+    str += String.fromCharCode(data[i]);
+    if (data[i] == 10) {
+      console.log("decoding: " + str.toString());
+      //var splitData = data.toString().split('\n');
+      //for (var i = 0; i < splitData.length; i++) {
+      //  if (splitData[i].length === 0) {
+      //    continue;
+      //  }
+      io.emit('ship_data', decoder.decode(str));
+      str = "";
     }
-    io.emit('ship_data', decoder.decode(splitData[i]));
   }
 });

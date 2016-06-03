@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html>
   <head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
@@ -112,7 +112,7 @@
   </head>
   <body>
     <div id="map"></div>
-    <div id=legend>
+    <div id="legend">
       <table id="legend_table"></table>
     </div>
     <script>
@@ -120,7 +120,7 @@
       var types = ["passenger", "cargo", "reserved", "tanker", "tug", "tow", "search", "speed", "pleasure", "law", "fishing", "pilot", "anti-pollution"];
       var map;
 
-      var socket = io('ws://shipmapper.no-ip.net/');
+      var socket = io('http://localhost:1337');
       function initMap() {
         var map = new google.maps.Map(document.getElementById('map'), {
           center: {lat: 37.802734, lng:-122.398048},
