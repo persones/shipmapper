@@ -21,6 +21,7 @@ pasileyMonitor = require('monlib')('shipmapper');
 var config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 var ais_stream = config.ais_stream;
 
+var str = "";
 var dataReceived = false;
 var clients = {};
 var numClients = 0;
@@ -71,12 +72,21 @@ aisStream.connect(ais_stream.port,ais_stream.url, function() {
   pasileyMonitor.message('Connected to stream');
 });
 
+
 aisStream.on('data', function(data) {
+  console.log(data.toString());
   dataReceived = true;
-  var splitData = data.toString().split('\n');
-  for (var i = 0; i < splitData.length; i++) {
-    if (splitData[i].length === 0) {
-      continue;
+  for (var i = 0; i < data.length; i++) {
+    str += String.fromCharCode(data[i]);
+    if (data[i] == 10) {
+      console.log("decoding: " + str.toString());
+      //var splitData = data.toString().split('\n');
+      //for (var i = 0; i < splitData.length; i++) {
+      //  if (splitData[i].length === 0) {
+      //    continue;
+      //  }
+      io.emit('ship_data', decoder.decode(str));
+      str = "";
     }
     var decodedData = decoder.decode(splitData[i]);
     if (decodedData) {
