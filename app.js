@@ -1,10 +1,12 @@
+/*jslint esnext: true */
+/*jslint node: true */
 
 var express = require('express');
 
 var exphbs = require('express-handlebars');
 var net = require('net');
 var exploais = require('exploais');
-var decoder = new exploais.textDecoder();
+var decoder = new exploais.createTextDecoder();
 
 var app = express();
 var server = require('http').Server(app);
@@ -12,11 +14,16 @@ var io = require('socket.io')(server);
 
 var fs = require('fs');
 
+//var pasileyMonitor = require("/home/person/local_servers/paisley-mon/monlib.js")("shipmapper");
+
+pasileyMonitor = require('monlib')('shipmapper');
+
 var config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 var ais_stream = config.ais_stream;
 
-var inData = "";
 var dataReceived = false;
+var clients = {};
+var numClients = 0;
 
 app.engine('html', exphbs({extname:'html'}));
 app.set('view engine', 'hbs');
@@ -29,17 +36,29 @@ app.get('/', function(req, res){
   res.render('shipmapper.html');
 });
 server.listen(1337);
+server.on("connection", (socket) => {
+	socket.key = socket.remoteAddress + ":" + socket.remotePort;
+  clients[socket.key] = socket;
+	numClients++;
+	pasileyMonitor.message("clients: " + numClients);
+	socket.on("close", () => {
+		numClients--;
+		pasileyMonitor.message("clients: " + numClients);
+		delete clients[socket.key];
+	});
+});
 
 setInterval(function() {
   if (!dataReceived) {
-    console.log("idle too long. trying to reconnect");
+    pasileyMonitor.log("idle too long. trying to reconnect");
     try {
       aisStream.destroy();
       aisStream.connect(ais_stream.port, ais_stream.url, function() {
-        console.log('Connected to bitway');
+        pasileyMonitor.message("connected to stream");
       }); 
     }
     catch(err) {
+      pasileyMonitor.log(err);
       console.error(err);
     }
   }
@@ -47,9 +66,9 @@ setInterval(function() {
 }, 60000);
 
 var aisStream = new net.Socket();
-console.log("connectig to bitway");
+pasileyMonitor.message("connectig to stream");
 aisStream.connect(ais_stream.port,ais_stream.url, function() {
-  console.log('Connected to bitway');
+  pasileyMonitor.message('Connected to stream');
 });
 
 aisStream.on('data', function(data) {
@@ -59,6 +78,9 @@ aisStream.on('data', function(data) {
     if (splitData[i].length === 0) {
       continue;
     }
-    io.emit('ship_data', decoder.decode(splitData[i]));
+    var decodedData = decoder.decode(splitData[i]);
+    if (decodedData) {
+      io.emit('ship_data', decodedData);
+    }
   }
 });

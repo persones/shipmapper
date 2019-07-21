@@ -1,5 +1,9 @@
 {
   "ais_stream": {
+    "url": "ais.exploratorium.edu",
+    "port": 80
+  },
+  "ais_stream1": {
     "url": "bitway.com",
     "port": 2999
   }
