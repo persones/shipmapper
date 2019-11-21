@@ -1,3 +1,4 @@
 node_modules
 public/lib/*
 config.json
+html/logs/*.log

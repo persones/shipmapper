@@ -1,6 +1,7 @@
 {
   "ais_stream": {
-    "url": "ais.exploratorium.edu",
+    "url1": "ais.exploratorium.edu",
+    "url": "10.120.133.16",
     "port": 80
   },
   "ais_stream1": {
